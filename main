@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[ ]:
+
+
+def cambiarPorcentaje(rDict,selec,prcnt):
+    rDict[selec][1] = prcnt
+    
+def ingreso(rDict,qty):
+    for rubro in rDict.keys():
+        rDict[rubro][0]+=(rDict[rubro][1]/100)*qty
+        
+def egreso(rDict,selec,qty):
+    rDict[selec][0]-=qty
+    
+def newRubro(rDict,rubro,prcnt):
+    rDict[rubro.lower()]=[0.0,prcnt]
+    
+def showTrans():
+    try:
+        with open('movimientos.csv','r') as fileID:
+            print('Monto | Tipo | Rubro | Fecha')
+            for line in fileID:
+                ls = line.split(sep=',')
+                print(f'{ls[0]} | {ls[1]} | {ls[2]} | {ls[3]}',end='')
+    except FileNotFoundError:
+        print('No tienes ningún movimiento registrado.')
+            
+def getDate():
+    d, m, a = str(datetime.now().day),str(datetime.now().month),str(datetime.now().year)
+    return d+'/'+m+'/'+a
+
+def updateTrans(mov):
+    with open('movimientos.csv','a') as fileID:
+        fileID.write(str(mov)+'\n')
+
+
+# In[ ]:
+
+
+def guardar(rDict):
+    with open('rubros.txt','w') as fileID:
+        fileID.write(str(rDict))
+
+def cargar(rDict):
+    try:
+        with open('rubros.txt','r') as fileID:
+            fs = fileID.read()
+            return eval(fs)
+    except FileNotFoundError:
+        newF = open('rubros.txt','x')
+        newF.write('{}')
+        newF.close()
+        newF = open('rubros.txt','r')
+        fs = newF.read()
+        newF.close()    
+        return eval(fs)
+        
+def clear():
+    if os.name == "nt":
+        os.system("cls")
+    else:
+        os.system("clear")
+
+
+# In[ ]:
+
+
+#Declaracón de variables
+#Main de interacción
+
+import os
+from datetime import datetime
+
+rDict = {}
+rDict = cargar(rDict)
+
+flag = True
+
+while flag == True:
+    clear()
+    print('Su saldo está distribuido en lo siguientes rubros:\n')
+    
+    for rubro in rDict.keys():
+        print('{0}- ${1} - {2}%'.format(rubro,round(rDict[rubro][0]),rDict[rubro][1]))
+
+    print('\nOperaciones:\nIngreso\nEgreso\nNuevo\nMovimientos\nSalir')
+    print('También Puede ingresar el nombre de un rubro para cambiar el procentaje')
+    selec = input('-> ')
+    
+    if selec.lower() == 'salir':
+        flag = False
+    elif selec.lower() == 'ingreso':
+        qty = float(input('Cantidad: '))
+        ingreso(rDict,qty)
+        mov = str(qty)+','+'ingreso'+','+'general'+','+getDate()
+        updateTrans(mov)
+        
+    elif selec.lower() == 'egreso':
+        selec = input('¿En cuál rubro se realizo el gasto?')
+        qty = float(input('Monto del egreso: '))
+        mov = str(qty)+','+'egreso'+','+selec+','+getDate()
+        egreso(rDict,selec,qty)
+        updateTrans(mov)
+        
+    elif selec.lower() == 'nuevo':
+        rubro = input('Nombre del nuevo rubro: ')
+        prcnt = int(input('Porcentaje: '))
+        newRubro(rDict,rubro,prcnt)
+    elif selec.lower() == 'movimientos':
+        showTrans()
+    else:
+        done = True
+        for rubro in rDict.keys():
+            if selec.lower() == rubro:
+                prcnt = int(input(f'Nuevo porcentaje del rubro {rubro} -> '))
+                cambiarPorcentaje(rDict,selec.lower(),prcnt)
+                done = True
+                break
+            else:
+                done = False
+        if not(done):
+            print('Esa operación no existe, por favor intenta de nuevo.')
+    
+    guardar(rDict)
+    input('Presiona enter para continuar...')
